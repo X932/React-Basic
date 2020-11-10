@@ -11,7 +11,7 @@ function Wall() {
                 avatar: 'https://lms.openjs.io/logo_js.svg',
                 name: 'OpenJS',
             },
-            content: 'Ну как, вы справились с домашкой?',
+            content: null,
             photo: null,
             hit: true,
             likes: 225,
@@ -36,10 +36,11 @@ function Wall() {
             likes: 222,
             likedByMe: false,
             hidden: true,
-            tags: ['deadline', 'homeork'],
+            tags: null,
             created: 1603774830,
         },
     ]);
+    const [edited, setEdited] = useState();
 
     const handlePostLike = id => {
         setPosts((prevState) => prevState.map(o => {
@@ -64,18 +65,42 @@ function Wall() {
             return { ...o, hidden };
         }
         ));
-    }
+    };
 
-    const handleSave = post => setPosts(prevState => [{...post}, ...prevState]);
+    const handlePostEdit = id => {
+        const post = posts.find(o => o.id === id);
+        if (post === undefined) {
+            return;
+        }
+        setEdited(post);
+    };
+
+    const handlePostSave = post => {
+        if (edited !== undefined) {
+            setPosts(prevState => prevState.map(o => {
+                if (o.id !== post.id) {
+                    return o;
+                }
+                return {...post};
+            }));
+            setEdited(undefined);
+            return;
+        }
+        setPosts(prevState => [{...post}, ...prevState]);
+    };
+
+    const handlePostCancelEdit = () => setEdited(undefined);
 
     return (
         <>
-            <PostForm onSave={handleSave} />
+            <PostForm edited={edited} onSave={handlePostSave}
+            onCancel={handlePostCancelEdit} />
             <div>
                 {posts.map(o => <Post key={o.id} post={o}
                         onLike={handlePostLike} onRemove={handlePostRemove}
                         onHide={handleToggleVisibility} 
-                        onShow={handleToggleVisibility} />)}
+                        onShow={handleToggleVisibility}
+                        onEdit={handlePostEdit} />)}
             </div>
         </>
     );

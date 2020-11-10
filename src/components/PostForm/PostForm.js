@@ -1,28 +1,34 @@
-import React, {useState} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 
-function PostForm({onSave}) {
-    const [post, setPost] = useState({
-        id: Date.now(),
-        author: {
-            avatar: 'https://lms.openjs.io/logo_js.svg',
-            name: 'OpenJS',
-        },
-        content: '',
-        photo: null,
-        hit: false,
-        likes: 0,
-        likedByMe: false,
-        hidden: false,
-        tags: [],
-        created: Date.now(),    
-    });
+const empty = {
+    id: 0,
+    author: {
+        avatar: 'https://lms.openjs.io/logo_js.svg',
+        name: 'OpenJS',
+    },
+    content: '',
+    photo: null,
+    hit: false,
+    likes: 0,
+    likedByMe: false,
+    hidden: false,
+    tags: null,
+    created: 0,
+};
+
+function PostForm({edited = empty, onSave, onCancel}) {
+
+    const [post, setPost] = useState(edited);
+    const firstFocusEl = useRef(null);
+    useEffect(() => {
+        setPost(edited);
+    }, [edited]);
 
     const handleSubmit = ev => {
         ev.preventDefault();
-
         post.tags = post.tags && post.tags.join(' ').trim().replace(/\s+/g, ' ').replace(/#/g, '').split(' ');
 
-        if (post.tags && post.tags.length === 1 && post.tags[0] === '') {
+        if ((post.tags && post.tags.length === 1 && post.tags[0] === '') || post.tags === undefined) {
             post.tags = null;
         }
         if (post.photo?.url === undefined || post.photo?.url === '') {
@@ -31,7 +37,13 @@ function PostForm({onSave}) {
         if (post.photo?.alt === undefined && post.photo !== null) {
             post.photo.alt = '';
         }
-        onSave(post);
+        onSave({
+            ...post, 
+            id: post.id || Date.now(), 
+            created: post.created || Date.now()
+        });
+        setPost(empty);
+        firstFocusEl.current.focus();
     };
 
     const photo = {
@@ -59,14 +71,33 @@ function PostForm({onSave}) {
         setPost(prevState => ({...prevState, [name]: value}));
     };
 
+    const handleCancelEdit = () => onCancel();
+
     return (
-        <form onSubmit={handleSubmit}>
-            <textarea name="content" placeholder="content" value={post.content} onChange={handleChange}></textarea>
-            <input name="tags" placeholder="tags" value={post.tags?.join(' ')} onChange={handleChange} />
-            <input name="photo" placeholder="photo" onChange={handleChange} />
-            <input name="alt" placeholder="alt" onChange={handleChange} />
-            <button>Ok</button>
-        </form>
+        <>
+            <form onSubmit={handleSubmit}>
+                <textarea 
+                    ref={firstFocusEl} name="content" 
+                    placeholder="content" value={post.content || ''} 
+                    onChange={handleChange}>
+                </textarea>
+                <input 
+                    name="tags" placeholder="tags" 
+                    value={post.tags?.join(' ') || ''} 
+                    onChange={handleChange} />
+                
+                <input name="photo" placeholder="photo" 
+                    value={post.photo?.url || ''} 
+                    onChange={handleChange} />
+                
+                <input name="alt" placeholder="alt" 
+                    value={post.photo?.alt || ''} 
+                    onChange={handleChange} />
+                
+                <button>Ok</button>
+            </form>
+            {post.id !== 0 && <button onClick={handleCancelEdit}>Отменить</button>}
+        </>
     )
 }
 
